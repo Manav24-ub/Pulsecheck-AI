@@ -1,0 +1,6 @@
+{
+  "name": "PulseCheck AI",
+  "description": "A clean, modern healthcare triage tool designed to analyze blood test reports, displaying parsed biomarkers, risk severities, layman's explanations, and tailored lifestyle recommendations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

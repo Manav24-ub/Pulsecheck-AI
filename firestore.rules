@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net (Default-Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Reusable Security Primitives
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    
+    function isSignedIn() { 
+      return request.auth != null; 
+    }
+    
+    function isVerifiedUser() { 
+      return isSignedIn() && request.auth.token.email_verified == true; 
+    }
+    
+    function isOwner(userId) { 
+      return isVerifiedUser() && request.auth.uid == userId; 
+    }
+
+    // Entity Schema Validation Callables
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['email', 'createdAt']) &&
+             data.keys().size() >= 2 && data.keys().size() <= 4 &&
+             data.email is string && data.email.size() <= 200 &&
+             (!data.keys().hasAny(['displayName']) || (data.displayName is string && data.displayName.size() <= 100)) &&
+             data.createdAt == request.time;
+    }
+
+    function isValidSession(data) {
+      return data.keys().hasAll(['title', 'patientName', 'age', 'gender', 'date', 'triageStatus', 'summaryText', 'clinicalInterpretation', 'primaryRecommendation', 'biomarkers']) &&
+             data.keys().size() == 10 &&
+             data.title is string && data.title.size() <= 200 &&
+             data.patientName is string && data.patientName.size() <= 100 &&
+             data.age is int && data.age >= 0 && data.age <= 150 &&
+             (data.gender == 'Male' || data.gender == 'Female' || data.gender == 'Other') &&
+             data.date is string && data.date.size() <= 20 &&
+             (data.triageStatus == 'GREEN' || data.triageStatus == 'YELLOW' || data.triageStatus == 'RED') &&
+             data.summaryText is string && data.summaryText.size() <= 1000 &&
+             data.clinicalInterpretation is string && data.clinicalInterpretation.size() <= 4050 &&
+             data.primaryRecommendation is string && data.primaryRecommendation.size() <= 2000 &&
+             data.biomarkers is list && data.biomarkers.size() <= 50 &&
+             (data.biomarkers.size() == 0 || data.biomarkers[0] is map);
+    }
+
+    // Collection Security Gates
+    
+    // User Profile Documents
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow update: if isOwner(userId) && isValidUserProfile(request.resource.data) && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isOwner(userId);
+    }
+
+    // Health Analysis Report Sessions
+    match /users/{userId}/sessions/{sessionId} {
+      allow get: if isOwner(userId) && isValidId(sessionId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(sessionId) && isValidSession(request.resource.data);
+      allow update: if isOwner(userId) && isValidId(sessionId) && isValidSession(request.resource.data) &&
+                      request.resource.data.date == resource.data.date;
+      allow delete: if isOwner(userId) && isValidId(sessionId);
+    }
+  }
+}

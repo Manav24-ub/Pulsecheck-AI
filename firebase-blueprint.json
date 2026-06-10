@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "Session": {
+      "title": "AnalysisSession",
+      "description": "Represents an individual clinical triage analysis session.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The description/title of the report session." },
+        "patientName": { "type": "string", "description": "The name of the patient." },
+        "age": { "type": "integer", "description": "The age of the patient in years." },
+        "gender": { "type": "string", "enum": ["Male", "Female", "Other"], "description": "The physiological gender of the patient." },
+        "date": { "type": "string", "format": "date", "description": "The publication/analysis date." },
+        "triageStatus": { "type": "string", "enum": ["GREEN", "YELLOW", "RED"], "description": "Triage priority severity level." },
+        "summaryText": { "type": "string", "description": "Short diagnostic overview summary." },
+        "clinicalInterpretation": { "type": "string", "description": "In-depth modern medical context analysis." },
+        "primaryRecommendation": { "type": "string", "description": "Primary action-focused advisory recommendation." },
+        "biomarkers": { "type": "array", "description": "Extracted biomarker detail list." }
+      },
+      "required": [
+        "title",
+        "patientName",
+        "age",
+        "gender",
+        "date",
+        "triageStatus",
+        "summaryText",
+        "clinicalInterpretation",
+        "primaryRecommendation",
+        "biomarkers"
+      ]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with basic account details.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "description": "The email address of the authenticated user." },
+        "displayName": { "type": "string", "description": "Display name of the user." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when account was registered." }
+      },
+      "required": ["email", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Information about a registered user user."
+    },
+    "/users/{userId}/sessions/{sessionId}": {
+      "schema": "Session",
+      "description": "List of parsed and saved blood analysis reports for the user."
+    }
+  }
+}
